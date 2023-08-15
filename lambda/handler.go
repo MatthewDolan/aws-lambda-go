@@ -23,8 +23,8 @@ type Handler interface {
 type handlerOptions struct {
 	handlerFunc
 	baseContext        context.Context
-	jsonEncoderOptions []func(encoder *json.Encoder)
-	jsonDecoderOptions []func(decoder *json.Decoder)
+	jsonEncoderOptions []func(encoder interface{})
+	jsonDecoderOptions []func(decoder interface{})
 	setIndentUsed      bool
 	enableSIGTERM      bool
 	sigtermCallbacks   []func()
@@ -48,7 +48,7 @@ func WithContext(ctx context.Context) Option {
 	})
 }
 
-// WithJSONEncoderOption allows setting arbitrary options on the underlying json encoder
+// WithEncoderOption allows setting arbitrary options on the underlying json encoder
 //
 // Usage:
 //
@@ -56,18 +56,21 @@ func WithContext(ctx context.Context) Option {
 //		func () (string, error) {
 //			return "<html><body>hello!></body></html>", nil
 //		},
-//		lambda.WithJSONEncoderOption(func(encoder *json.Encoder) {
-//			encoder.SetEscapeHTML(true)
-//			encoder.SetIndent(">", " ")
+//		lambda.WithEncoderOption(func(encoder interface{}) {
+//			switch encoder := encoder.(type) {
+//			case *json.Encoder:
+//				encoder.SetEscapeHTML(true)
+//				encoder.SetIndent(">", " ")
+//			}
 //		}),
 //	)
-func WithJSONEncoderOption(opt func(encoder *json.Encoder)) Option {
+func WithEncoderOption(opt func(encoder interface{})) Option {
 	return Option(func(h *handlerOptions) {
 		h.jsonEncoderOptions = append(h.jsonEncoderOptions, opt)
 	})
 }
 
-// WithJSONDecoderOption allows setting arbitrary options on the underlying json decoder
+// WithDecoderOption allows setting arbitrary options on the underlying json decoder
 //
 // Usage:
 //
@@ -75,12 +78,15 @@ func WithJSONEncoderOption(opt func(encoder *json.Encoder)) Option {
 //		func (event any) (any, error) {
 //			return event, nil
 //		},
-//		lambda.WithJSONEncoderOption(func(decoder *json.Decoder) {
-//			decoder.UseNumber()
-//			decoder.DisallowUnknownFields()
+//		lambda.WithEncoderOption(func(decoder interface{}) {
+//			switch decoder := decoder.(type) {
+//			case *json.Decoder:
+//				decoder.UseNumber()
+//				decoder.DisallowUnknownFields()
+//			}
 //		}),
 //	)
-func WithJSONDecoderOption(opt func(decoder *json.Decoder)) Option {
+func WithDecoderOption(opt func(decoder interface{})) Option {
 	return Option(func(h *handlerOptions) {
 		h.jsonDecoderOptions = append(h.jsonDecoderOptions, opt)
 	})
@@ -97,8 +103,11 @@ func WithJSONDecoderOption(opt func(decoder *json.Decoder)) Option {
 //		lambda.WithSetEscapeHTML(true),
 //	)
 func WithSetEscapeHTML(escapeHTML bool) Option {
-	return WithJSONEncoderOption(func(encoder *json.Encoder) {
-		encoder.SetEscapeHTML(escapeHTML)
+	return WithEncoderOption(func(encoder interface{}) {
+		switch encoder := encoder.(type) {
+		case *json.Encoder:
+			encoder.SetEscapeHTML(escapeHTML)
+		}
 	})
 }
 
@@ -118,8 +127,12 @@ func WithSetIndent(prefix, indent string) Option {
 		if prefix != "" || indent != "" {
 			h.setIndentUsed = true
 		}
-		h.jsonEncoderOptions = append(h.jsonEncoderOptions, func(encoder *json.Encoder) {
-			encoder.SetIndent(prefix, indent)
+		h.jsonEncoderOptions = append(h.jsonEncoderOptions, func(encoder interface{}) {
+			switch encoder := encoder.(type) {
+			case *json.Encoder:
+				encoder.SetIndent(prefix, indent)
+			}
+
 		})
 	})
 }

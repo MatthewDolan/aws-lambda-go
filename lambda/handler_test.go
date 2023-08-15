@@ -287,7 +287,7 @@ func TestInvokes(t *testing.T) {
 			},
 		},
 		{
-			name:     "WithJSONDecoderOption(func(decoder *json.Decoder) { decoder.UseNumber() })",
+			name:     "WithDecoderOption(func(decoder interface{}) { switch decoder := decoder.(type) { case *json.Decoder: decoder.UseNumber() } })",
 			input:    `{ "i": 1 }`,
 			expected: expected{`null`, nil},
 			handler: func(in struct {
@@ -298,10 +298,15 @@ func TestInvokes(t *testing.T) {
 				}
 				return nil
 			},
-			options: []Option{WithJSONDecoderOption(func(decoder *json.Decoder) { decoder.UseNumber() })},
+			options: []Option{WithDecoderOption(func(decoder interface{}) {
+				switch decoder := decoder.(type) {
+				case *json.Decoder:
+					decoder.UseNumber()
+				}
+			})},
 		},
 		{
-			name:     "WithJSONDecoderOption(func(decoder *json.Decoder) {})",
+			name:     "WithDecoderOption(func(decoder interface{}) {})",
 			input:    `{ "i": 1 }`,
 			expected: expected{`null`, nil},
 			handler: func(in struct {
@@ -312,23 +317,33 @@ func TestInvokes(t *testing.T) {
 				}
 				return nil
 			},
-			options: []Option{WithJSONDecoderOption(func(decoder *json.Decoder) {})},
+			options: []Option{WithDecoderOption(func(decoder interface{}) {})},
 		},
 		{
-			name:     "WithJSONEncoderOption(func(encoder *json.Encoder) { encoder.SetEscapeHTML(false) })",
+			name:     "WithEncoderOption(func(encoder interface{}) { switch encoder := encoder.(type) { case *json.Encoder: encoder.SetEscapeHTML(false) } })",
 			expected: expected{`"<html><body>html in json string!</body></html>"`, nil},
 			handler: func() (string, error) {
 				return "<html><body>html in json string!</body></html>", nil
 			},
-			options: []Option{WithJSONEncoderOption(func(encoder *json.Encoder) { encoder.SetEscapeHTML(false) })},
+			options: []Option{WithEncoderOption(func(encoder interface{}) {
+				switch encoder := encoder.(type) {
+				case *json.Encoder:
+					encoder.SetEscapeHTML(false)
+				}
+			})},
 		},
 		{
-			name:     "WithJSONEncoderOption(func(encoder *json.Encoder) { encoder.SetEscapeHTML(true) })",
+			name:     "WithEncoderOption(func(encoder interface{}) { switch encoder := encoder.(type) { case *json.Encoder: encoder.SetEscapeHTML(true) } })",
 			expected: expected{`"\u003chtml\u003e\u003cbody\u003ehtml in json string!\u003c/body\u003e\u003c/html\u003e"`, nil},
 			handler: func() (string, error) {
 				return "<html><body>html in json string!</body></html>", nil
 			},
-			options: []Option{WithJSONEncoderOption(func(encoder *json.Encoder) { encoder.SetEscapeHTML(true) })},
+			options: []Option{WithEncoderOption(func(encoder interface{}) {
+				switch encoder := encoder.(type) {
+				case *json.Encoder:
+					encoder.SetEscapeHTML(true)
+				}
+			})},
 		},
 		{
 			name:     "WithSetEscapeHTML(false)",
