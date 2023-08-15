@@ -5,6 +5,7 @@ package lambda
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -284,6 +285,52 @@ func TestInvokes(t *testing.T) {
 			handler: func(e interface{}) (interface{}, error) {
 				return nil, messages.InvokeResponse_Error{Message: "message", Type: "type"}
 			},
+		},
+		{
+			name:     "WithUseNumber",
+			input:    `{ "i": 1 }`,
+			expected: expected{`null`, nil},
+			handler: func(in struct {
+				I interface{} `json:"i"`
+			}) error {
+				if _, ok := in.I.(json.Number); !ok {
+					return fmt.Errorf("`i` was not of type json.Number: %T", in.I)
+				}
+				return nil
+			},
+			options: []Option{WithUseNumber()},
+		},
+		{
+			name:     "WithoutUseNumber",
+			input:    `{ "i": 1 }`,
+			expected: expected{`null`, nil},
+			handler: func(in struct {
+				I interface{} `json:"i"`
+			}) error {
+				if _, ok := in.I.(float64); !ok {
+					return fmt.Errorf("`i` was not of type float64: %T", in.I)
+				}
+				return nil
+			},
+			options: []Option{},
+		},
+		{
+			name:     "WithDisallowUnknownFields",
+			input:    `{ "i": 1 }`,
+			expected: expected{``, fmt.Errorf("json: unknown field \"i\"")},
+			handler: func(in struct{}) error {
+				return nil
+			},
+			options: []Option{WithDisallowUnknownFields()},
+		},
+		{
+			name:     "WithoutDisallowUnknownFields",
+			input:    `{ "i": 1 }`,
+			expected: expected{`null`, nil},
+			handler: func(in struct{}) error {
+				return nil
+			},
+			options: []Option{},
 		},
 		{
 			name:     "WithSetEscapeHTML(false)",

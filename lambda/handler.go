@@ -22,12 +22,14 @@ type Handler interface {
 
 type handlerOptions struct {
 	handlerFunc
-	baseContext              context.Context
-	jsonResponseEscapeHTML   bool
-	jsonResponseIndentPrefix string
-	jsonResponseIndentValue  string
-	enableSIGTERM            bool
-	sigtermCallbacks         []func()
+	baseContext                      context.Context
+	jsonRequestUseNumber             bool
+	jsonRequestDisallowUnknownFields bool
+	jsonResponseEscapeHTML           bool
+	jsonResponseIndentPrefix         string
+	jsonResponseIndentValue          string
+	enableSIGTERM                    bool
+	sigtermCallbacks                 []func()
 }
 
 type Option func(*handlerOptions)
@@ -45,6 +47,38 @@ type Option func(*handlerOptions)
 func WithContext(ctx context.Context) Option {
 	return Option(func(h *handlerOptions) {
 		h.baseContext = ctx
+	})
+}
+
+// WithUseNumber sets UseNumber on the underlying json decoder
+//
+// Usage:
+//
+//	lambda.StartWithOptions(
+//		func(argument map[string]interface{}) (string, error) {
+//			...
+//		},
+//		lambda.WithUseNumber(),
+//	)
+func WithUseNumber() Option {
+	return Option(func(h *handlerOptions) {
+		h.jsonRequestUseNumber = true
+	})
+}
+
+// WithDisallowUnknownFields sets DisallowUnknownFields on the underlying json decoder
+//
+// Usage:
+//
+//	lambda.StartWithOptions(
+//		func(argument map[string]interface{}) (string, error) {
+//			...
+//		},
+//		lambda.WithDisallowUnknownFields(),
+//	)
+func WithDisallowUnknownFields() Option {
+	return Option(func(h *handlerOptions) {
+		h.jsonRequestDisallowUnknownFields = true
 	})
 }
 
@@ -267,6 +301,12 @@ func reflectHandler(f interface{}, h *handlerOptions) handlerFunc {
 		out.Reset()
 		in := bytes.NewBuffer(payload)
 		decoder := json.NewDecoder(in)
+		if h.jsonRequestUseNumber {
+			decoder.UseNumber()
+		}
+		if h.jsonRequestDisallowUnknownFields {
+			decoder.DisallowUnknownFields()
+		}
 		encoder := json.NewEncoder(out)
 		encoder.SetEscapeHTML(h.jsonResponseEscapeHTML)
 		encoder.SetIndent(h.jsonResponseIndentPrefix, h.jsonResponseIndentValue)
